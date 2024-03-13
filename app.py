@@ -17,24 +17,64 @@ def obtener_datos_criptomoneda(nombre_cripto):
 # UI para la comparación del market cap
 st.title('Clasificacion en relacion al potencial crecimiento')
 
+def activo_ya_registrado(nombre_cripto):
+    try:
+        with open('historial_criptomonedas.csv', 'r', newline='') as archivo:
+            lector = csv.reader(archivo)
+            for fila in lector:
+                if nombre_cripto in fila:
+                    return True
+        return False
+    except FileNotFoundError:
+        # Si el archivo no existe, no hay datos previos, por lo que retorna False.
+        return False
+
+
+def guardar_resultado_en_archivo(nombre_cripto, score):
+    if not activo_ya_registrado(nombre_cripto):
+        with open('historial_criptomonedas.csv', 'a', newline='') as archivo:
+            escritor = csv.writer(archivo)
+            escritor.writerow([nombre_cripto, score])
+    else:
+        print(f"El activo {nombre_cripto} ya está registrado.")
+
+
 def calcular_calificacion(datos_cripto, nombre_cripto):
-    score = 0  # Inicializa score
     datos_moneda = datos_cripto['data'][nombre_cripto]
     circulating_supply = datos_moneda.get('circulating_supply', 0)
     max_supply = datos_moneda.get('max_supply')
-    if max_supply is None:
-        calificacion = "El max supply no se encuentra disponible para " + nombre_cripto
-    elif circulating_supply > 0 and max_supply > 0:
+    market_cap = datos_moneda['quote']['USD']['market_cap']
+    
+    # Rangos de market cap adaptados a categorías generales
+    muy_alta = 50000000000  # Ejemplo: mayor que 50 mil millones USD
+    alta = 10000000000  # Ejemplo: mayor que 10 mil millones USD
+    media = 1000000000   # Ejemplo: mayor que 1 mil millones USD
+    baja = 100000000    # Ejemplo: mayor que 100 millones USD
+    
+    if max_supply:
         score = round((circulating_supply / max_supply) * 100)
-        calificacion = f'Calificación de {nombre_cripto}: {score} / 100'
+        calificacion = f'Calificación de {nombre_cripto} basada en supply: {score} / 100'
     else:
-        calificacion = "Información insuficiente para calcular una calificación para " + nombre_cripto
+        # Operación alternativa basada en market cap
+        if market_cap >= muy_alta:
+            calificacion = '<Excelente pero sin max supply'
+            score = 90  # Alta confianza y adopción en el mercado
+        elif market_cap >= alta and market_cap < muy_alta:
+            calificacion = 'Muy buena pero sin max supply'
+            score = 75  # Buena confianza y adopción en el mercado
+        elif market_cap >= media and market_cap < alta:
+            calificacion = 'buena pero sin max supply'
+            score = 50  # Confianza y adopción moderadas en el mercado
+        elif market_cap >= baja and market_cap < media:
+            calificacion = 'mala y  sin max supply'
+            score = 25  # Confianza y adopción bajas en el mercado
+        else:
+            calificacion = 'Muy mala y sin max supply'
+            score = 10  # Mínima confianza y adopción en el mercado
+    
     return calificacion, score
 
-def guardar_resultado_en_archivo(nombre_cripto, score):
-    with open('historial_criptomonedas.csv', 'a', newline='') as archivo:
-        escritor = csv.writer(archivo)
-        escritor.writerow([nombre_cripto, score])
+        
 #testeo
 def accion():
     nombre_cripto = st.session_state.nombre_cripto.upper()
@@ -96,3 +136,4 @@ if st.button('Estimar', key='btn_comparar'):
             st.error(f'Error al obtener datos: la clave {e} no se encontró.')
         except Exception as e:
             st.error(f'Error al procesar los datos: {e}')
+
