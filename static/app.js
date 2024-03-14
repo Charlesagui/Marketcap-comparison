@@ -32,6 +32,18 @@ async function obtenerDatosCriptomonedaHandler() {
     }
 }
 
+// Obtener referencia al input del nombre de la criptomoneda
+const inputNombreCripto = document.getElementById('nombre_cripto');
+
+// Agregar event listener para el evento 'keyup'
+inputNombreCripto.addEventListener('keyup', function(event) {
+  // Verificar si la tecla presionada es Enter (código de tecla 13)
+  if (event.keyCode === 13) {
+    // Llamar a la función que obtiene los datos de la criptomoneda
+    obtenerDatosCriptomonedaHandler();
+  }
+});
+
 
 
 async function obtenerDatosCriptomoneda(nombreCripto) {
@@ -80,6 +92,9 @@ async function calcularCalificacion(nombreCripto, datosCripto) {
             const { calificacion, score } = await respuesta.json();
             console.log(`Calificación recibida: ${calificacion}, Score: ${score}`);
             document.getElementById('calificacion').innerHTML = `<h3>Calificación: ${calificacion}, Score: ${score}</h3>`;
+
+            // Llamada a guardar resultado
+            await guardarResultado(nombreCripto, score);
         } else {
             console.error('Error al recibir calificación:', await respuesta.text());
         }
@@ -89,30 +104,65 @@ async function calcularCalificacion(nombreCripto, datosCripto) {
 }
 
 
+function formatearNumeroConEscala(numero) {
+    const escalas = ['', 'mil', 'millón', 'billón', 'trillón', 'cuatrillón', 'quintillón', 'sextillón', 'septillón', 'octillón', 'nonillón', 'decillón'];
+    let escalaNumerica = 0;
+    let numeroFormateado = numero;
+    let partes = [];
+
+    if (numero < 0.000001) {
+        return `$${numero.toExponential(5)}`;
+    }
+
+    while (numeroFormateado >= 1000) {
+        const parte = Math.floor(numeroFormateado % 1000);
+        partes.unshift(parte);
+        numeroFormateado = Math.floor(numeroFormateado / 1000);
+        escalaNumerica++;
+    }
+
+    partes.unshift(numeroFormateado);
+
+    const numeroCompleto = partes.join(',');
+    const escala = escalas[escalaNumerica];
+    const escalaNombre = escala ? ` (${numeroFormateado} ${escala}${numeroFormateado !== 1 ? 'es' : ''})` : '';
+
+    if (numero >= 0.000001 && numero < 1) {
+        return `$${numero.toFixed(8)}`;
+    } else {
+        return `$${numeroCompleto}${escalaNombre}`;
+    }
+}
+
+
+
+
 function mostrarDatosCriptomoneda(datos, nombreCripto) {
     const monedaData = datos.data[nombreCripto];
     if (!monedaData) {
-        console.error('Datos de la criptomoneda no encontrados en la respuesta de la API');
-        return;
+    console.error('Datos de la criptomoneda no encontrados en la respuesta de la API');
+    return;
     }
-
+    
     const quote = monedaData.quote.USD;
     const divDatosCriptomoneda = document.getElementById('datos_cripto');
     if (!divDatosCriptomoneda) {
         console.error('El elemento para mostrar los datos de la criptomoneda no se encontró.');
         return;
     }
-
+    
     divDatosCriptomoneda.innerHTML = `
         <h3>Datos de ${nombreCripto.toUpperCase()}</h3>
-        <p><strong>Precio actual (USD):</strong> $${quote.price.toFixed(2)}</p>
+        <p><strong>Precio actual (USD):</strong> ${quote.price}</p>
         <p><strong>Cambio en 24h (%):</strong> ${quote.percent_change_24h.toFixed(2)}%</p>
-        <p><strong>Market Cap (USD):</strong> $${quote.market_cap.toFixed(2)}</p>
-        <p><strong>Volumen 24h (USD):</strong> $${quote.volume_24h.toFixed(2)}</p>
-        <p><strong>Circulating Supply:</strong> ${monedaData.circulating_supply.toLocaleString()}</p>
-        <p><strong>Fully Diluted Market Cap (USD):</strong> ${quote.fully_diluted_market_cap ? `$${quote.fully_diluted_market_cap.toFixed(2)}` : 'N/A'}</p>
+        <p><strong>Market Cap (USD):</strong> ${formatearNumeroConEscala(quote.market_cap)}</p>
+        <p><strong>Volumen 24h (USD):</strong> ${formatearNumeroConEscala(quote.volume_24h)}</p>
+        <p><strong>Circulating Supply:</strong> ${formatearNumeroConEscala(monedaData.circulating_supply)}</p>
+        <p><strong>Fully Diluted Market Cap (USD):</strong> ${quote.fully_diluted_market_cap ? `${formatearNumeroConEscala(quote.fully_diluted_market_cap)}` : 'N/A'}</p>
     `;
-}
+    
+    }
+
 
 async function enviarDatosParaCalificacion(nombreCripto, datosCripto) {
     // Asegúrate de que 'datosCripto' tiene la estructura correcta esperada por tu endpoint
