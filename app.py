@@ -126,13 +126,14 @@ def estimar_precio_potencial():
             market_cap_objetivo = datos_objetivo.get('market_cap')
             circulating_supply_base = datos_base.get('circulating_supply')
             if market_cap_objetivo and circulating_supply_base:
-                precio_potencial = int(round (  market_cap_objetivo / circulating_supply_base ))
+                precio_potencial = market_cap_objetivo / circulating_supply_base
                 return jsonify({'precio_potencial': precio_potencial})
             else:
                 return jsonify({'error': 'Datos faltantes para una de las criptomonedas'}), 400
         except Exception as e:
             return jsonify({'error': f'Error al calcular el precio potencial: {e}'}), 500
     return jsonify({'error': 'Error al obtener datos de las criptomonedas'}), 500
+
 
 def obtener_market_cap(cripto):
     url = f"https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol={cripto}"

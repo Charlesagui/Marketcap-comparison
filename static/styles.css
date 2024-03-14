@@ -1,71 +1,87 @@
 /* Estilos Generales */
 body {
-  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-  margin: 0;
-  padding: 0;
-  background-color: #f5f5f5;
-  color: #333;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif; /* Define la fuente del texto para el cuerpo del documento. */
+  margin: 0; /* Elimina los márgenes por defecto del cuerpo. */
+  padding: 0; /* Elimina el padding por defecto del cuerpo. */
+  background-color: #f5f5f5; /* Establece el color de fondo del cuerpo del documento. */
+  color: #333; /* Define el color del texto para el cuerpo del documento. */
 }
 
 header,
 footer {
-  background-color: #222;
-  color: #fff;
-  text-align: center;
-  padding: 1em 0;
+  background-color: #222; /* Establece el color de fondo para el header y footer. */
+  color: #fff; /* Define el color del texto para el header y footer. */
+  text-align: center; /* Alinea el texto al centro en el header y footer. */
+  padding: 1em 0; /* Añade padding vertical a header y footer. */
 }
 
 h1,
 h2 {
-  margin: 0.5em 0;
+  margin: 0.5em 0; /* Establece márgenes verticales para los títulos h1 y h2. */
 }
 
 main {
-  padding: 20px;
+  display: flex; /* Activa Flexbox para organizar el contenido de 'main' de manera flexible. */
+  flex-direction: column; /* Organiza los hijos de 'main' en una columna vertical. */
+  align-items: center; /* Centra horizontalmente los elementos hijos en 'main'. */
+  justify-content: center; /* Centra verticalmente los elementos hijos en 'main', efectivo con una altura definida. */
+  min-height: 50vh; /* Asegura que 'main' tenga al menos la mitad de la altura de la ventana del navegador. */
 }
 
 /* Estilos de Secciones y Contenido */
 section {
-  background-color: #fff;
-  margin: 20px 0;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #fff; /* Define el color de fondo para las secciones. */
+  margin: 20px 0; /* Añade margen vertical para separar las secciones. */
+  padding: 20px; /* Añade padding dentro de las secciones. */
+  border-radius: 8px; /* Redondea las esquinas de las secciones. */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Añade una sombra sutil a las secciones. */
 }
 
 input[type="text"] {
-  width: calc(100% - 22px);
-  padding: 10px;
-  margin: 10px 0;
-  border: 1px solid #ccc;
-  border-radius: 4px;
+  width: calc(100% - 22px); /* Calcula el ancho para ajustarse dentro de su contenedor, teniendo en cuenta el padding. */
+  padding: 10px; /* Añade padding dentro del input. */
+  margin: 10px 0; /* Añade margen vertical. */
+  border: 1px solid #ccc; /* Define el borde del input. */
+  border-radius: 4px; /* Redondea las esquinas del input. */
+  text-align: center; /* Centra el texto que el usuario escribe */
+}
+.contenedor-botones {
+  display: flex;
+  justify-content: center; /* Centra el botón horizontalmente */
+  align-items: center; /* Centra el botón verticalmente si decides usar flex-direction: column; */
 }
 
+
+
 button {
-  background-color: #007bff;
-  color: #fff;
-  border: none;
-  padding: 10px 20px;
-  margin: 10px 0;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 16px;
+  background-color: #3f6895; /* Color de fondo de los botones. */
+  color: #fff; /* Color del texto de los botones. */
+  border: none; /* Elimina el borde por defecto de los botones. */
+  padding: 10px 20px; /* Añade padding dentro de los botones. */
+  margin: 10px; /* Añade margen alrededor de los botones. */
+  border-radius: 4px; /* Redondea las esquinas de los botones. */
+  cursor: pointer; /* Cambia el cursor a una mano cuando se pasa sobre los botones. */
+  font-size: 16px; /* Tamaño del texto de los botones. */
 }
 
 button:hover {
-  background-color: #0056b3;
+  background-color: #556474; /* Cambia el color de fondo de los botones al pasar el cursor. */
 }
 
 /* Estilos para Resultados y Datos */
 #calificacion,
 #datos_cripto,
 #resultado_comparacion {
-  padding: 15px;
-  background-color: #e9ecef;
-  border-radius: 4px;
+  padding: 15px; /* Añade padding dentro de estos elementos. */
+  background-color: #e9ecef; /* Color de fondo de los contenedores de resultados y datos. */
+  border-radius: 4px; /* Redondea las esquinas de los contenedores de resultados y datos. */
+  margin: auto; /* Centra los contenedores de resultados y datos en su contenedor padre. */
+  display: block; /* Asegura que estos elementos se comporten como bloques. */
+  width: 80%; /* Establece el ancho de estos elementos al 80% de su contenedor padre. */
+  text-align: center; /* Alinea el texto y otros elementos inline o inline-block al centro. */
 }
 
 /* Estilo para el footer */
 footer p {
-  margin: 0;
+  margin: 0; /* Elimina el margen por defecto de los párrafos en el footer. */
 }
