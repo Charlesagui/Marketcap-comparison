@@ -91,7 +91,7 @@ async function calcularCalificacion(nombreCripto, datosCripto) {
         if (respuesta.ok) {
             const { calificacion, score } = await respuesta.json();
             console.log(`Calificación recibida: ${calificacion}, Score: ${score}`);
-            document.getElementById('calificacion').innerHTML = `<h3>Calificación: ${calificacion}, Score: ${score}</h3>`;
+            document.getElementById('calificacion').innerHTML = `<h3>Calificación: ${calificacion}</h3>`;
 
             // Llamada a guardar resultado
             await guardarResultado(nombreCripto, score);
