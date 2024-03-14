@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clasificación de Criptomonedas</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}"> 
+</head>
+<body>
+    <header>
+        <h1>Clasificación en relación al potencial de crecimiento de Criptomonedas</h1>
+    </header>
+    
+    <main>
+        <section id="entrada-datos">
+            <h2>Obtener Calificación de Criptomonedas</h2>
+            <input type="text" id="nombre_cripto" placeholder="Introduce el símbolo de la criptomoneda (ejemplo: BTC, ETH)">
+            <button id="obtenerDatosBtn">Obtener Calificación</button>
+        </section>
+
+        <section id="resultado-calificacion">
+            <h2>Resultado de Calificación</h2>
+            <div id="calificacion"></div>
+        </section>
+        
+        <section id="datos-criptomoneda">
+            <h2>Datos Adicionales de la Criptomoneda</h2>
+            <div id="datos_cripto"></div>
+        </section>
+
+        <section id="comparacion-marketcap">
+            <h2>Estimación del Market Cap de Una Criptomoneda Respecto a Otra</h2>
+            <input type="text" id="cripto_base" placeholder="Símbolo de la criptomoneda base (ejemplo: BTC)">
+            <input type="text" id="cripto_objetivo" placeholder="Símbolo de la criptomoneda objetivo">
+            <button id="estimarBtn">Estimar</button>
+            <div id="resultado_comparacion"></div>
+        </section>
+
+        <script src="{{ url_for('static', filename='app.js') }}"></script>
+    </main>
+    
+    <footer>
+        <p>Proyecto de Clasificación de Criptomonedas</p>
+    </footer>
+</body>
+</html>

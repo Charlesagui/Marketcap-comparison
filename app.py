@@ -1,139 +1,149 @@
-import streamlit as st
+from flask import Flask, request, jsonify, render_template
 import requests
 import csv
 
-# Función para obtener datos de la criptomoneda desde CoinMarketCap
-def obtener_datos_criptomoneda(nombre_cripto):
-    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
-    parametros = {'symbol': nombre_cripto}
-    headers = {
-        'Accepts': 'application/json',
-        'X-CMC_PRO_API_KEY': 'd3f45586-0973-4309-abe2-bd4bdf44b498'
-    }
+app = Flask(__name__)
 
+API_KEY = 'd3f45586-0973-4309-abe2-bd4bdf44b498'
+ARCHIVO_HISTORIAL = 'historial_criptomonedas.csv'
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/api/obtener_datos_criptomoneda/<nombre_cripto>', methods=['GET'])
+def obtener_datos_criptomoneda(nombre_cripto):
+    print(f"Obteniendo datos para: {nombre_cripto}")
+    url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest"
+    parametros = {'symbol': nombre_cripto.upper()}
+    headers = {'Accepts': 'application/json', 'X-CMC_PRO_API_KEY': API_KEY}
     respuesta = requests.get(url, headers=headers, params=parametros)
     datos = respuesta.json()
-    return datos
-# UI para la comparación del market cap
-st.title('Clasificacion en relacion al potencial crecimiento')
+    print(f"Respuesta API para {nombre_cripto}: {datos}")
+    return jsonify(datos)
+
+@app.route('/api/guardar_resultado', methods=['POST'])
+def guardar_resultado():
+    data = request.json
+    nombre_cripto = data.get('nombre_cripto')
+    score = data.get('score')
+    print(f"Guardando resultado para {nombre_cripto} con score {score}")
+    if not activo_ya_registrado(nombre_cripto):
+        guardar_resultado_en_archivo(nombre_cripto, score)
+        return jsonify({'mensaje': 'Resultado guardado exitosamente'})
+    else:
+        return jsonify({'mensaje': 'El activo ya está registrado'})
 
 def activo_ya_registrado(nombre_cripto):
     try:
-        with open('historial_criptomonedas.csv', 'r', newline='') as archivo:
-            lector = csv.reader(archivo)
-            for fila in lector:
-                if nombre_cripto in fila:
+        with open(ARCHIVO_HISTORIAL, 'r', newline='') as archivo:
+            for fila in csv.reader(archivo):
+                if nombre_cripto == fila[0]:
+                    print(f"{nombre_cripto} ya está registrado")
                     return True
-        return False
     except FileNotFoundError:
-        # Si el archivo no existe, no hay datos previos, por lo que retorna False.
-        return False
-
+        pass
+    return False
 
 def guardar_resultado_en_archivo(nombre_cripto, score):
-    if not activo_ya_registrado(nombre_cripto):
-        with open('historial_criptomonedas.csv', 'a', newline='') as archivo:
-            escritor = csv.writer(archivo)
-            escritor.writerow([nombre_cripto, score])
-    else:
-        print(f"El activo {nombre_cripto} ya está registrado.")
+    with open(ARCHIVO_HISTORIAL, 'a', newline='') as archivo:
+        csv.writer(archivo).writerow([nombre_cripto, score])
+    print(f"Resultado para {nombre_cripto} guardado exitosamente")
 
+@app.route('/api/calcular_calificacion', methods=['POST'])
+def calcular_calificacion_endpoint():
+    data = request.json
+    print(f"Datos recibidos en calcular_calificacion_endpoint: {data}")
+
+    nombre_cripto = data['nombre_cripto']
+    datos_cripto = data['datos_cripto']
+
+    calificacion, score = calcular_calificacion(datos_cripto, nombre_cripto)
+
+    print(f"Calificación calculada para {nombre_cripto}: Calificación = {calificacion}, Score = {score}")
+    return jsonify({'calificacion': calificacion, 'score': score})
 
 def calcular_calificacion(datos_cripto, nombre_cripto):
-    datos_moneda = datos_cripto['data'][nombre_cripto]
-    circulating_supply = datos_moneda.get('circulating_supply', 0)
-    max_supply = datos_moneda.get('max_supply')
-    market_cap = datos_moneda['quote']['USD']['market_cap']
-    
-    # Rangos de market cap adaptados a categorías generales
-    muy_alta = 50000000000  # Ejemplo: mayor que 50 mil millones USD
-    alta = 10000000000  # Ejemplo: mayor que 10 mil millones USD
-    media = 1000000000   # Ejemplo: mayor que 1 mil millones USD
-    baja = 100000000    # Ejemplo: mayor que 100 millones USD
-    
-    if max_supply:
-        score = round((circulating_supply / max_supply) * 100)
-        calificacion = f'Calificación de {nombre_cripto} basada en supply: {score} / 100'
-    else:
-        # Operación alternativa basada en market cap
-        if market_cap >= muy_alta:
-            calificacion = '<Excelente pero sin max supply'
-            score = 90  # Alta confianza y adopción en el mercado
-        elif market_cap >= alta and market_cap < muy_alta:
-            calificacion = 'Muy buena pero sin max supply'
-            score = 75  # Buena confianza y adopción en el mercado
-        elif market_cap >= media and market_cap < alta:
-            calificacion = 'buena pero sin max supply'
-            score = 50  # Confianza y adopción moderadas en el mercado
-        elif market_cap >= baja and market_cap < media:
-            calificacion = 'mala y  sin max supply'
-            score = 25  # Confianza y adopción bajas en el mercado
+    try:
+        if 'data' not in datos_cripto or nombre_cripto not in datos_cripto['data']:
+            print(f"No se encontraron datos para la criptomoneda {nombre_cripto}")
+            return "Error: No se encontraron datos para la criptomoneda", 0
+
+        datos_moneda = datos_cripto['data'][nombre_cripto]
+        circulating_supply = datos_moneda.get('circulating_supply', 0)
+        max_supply = datos_moneda.get('max_supply')
+        market_cap = datos_moneda['quote']['USD']['market_cap']
+
+        muy_alta = 50000000000
+        alta = 10000000000
+        media = 1000000000
+        baja = 100000000
+
+        if max_supply is not None and max_supply > 0:
+            score = round((circulating_supply / max_supply) * 100, 2)
+            calificacion = f'Calificación basada en supply: {score}/100'
+        elif market_cap:
+            # Si max_supply es None o cero, pero tenemos market_cap, calculamos basado en market_cap.
+            if market_cap >= muy_alta:
+                calificacion = 'Excelente pero sin max supply'
+                score = 90
+            elif market_cap >= alta and market_cap < muy_alta:
+                calificacion = 'Muy buena pero sin max supply'
+                score = 75
+            elif market_cap >= media and market_cap < alta:
+                calificacion = 'Buena pero sin max supply'
+                score = 50
+            elif market_cap >= baja and market_cap < media:
+                calificacion = 'Mala y sin max supply'
+                score = 25
+            else:
+                calificacion = 'Muy mala y sin max supply'
+                score = 10
         else:
-            calificacion = 'Muy mala y sin max supply'
-            score = 10  # Mínima confianza y adopción en el mercado
-    
-    return calificacion, score
+            # Caso en que ni max_supply ni market_cap están disponibles
+            return "No se puede calcular calificación sin supply o market cap", 0
 
-        
-#testeo
-def accion():
-    nombre_cripto = st.session_state.nombre_cripto.upper()
-    if nombre_cripto:
-        datos_cripto = obtener_datos_criptomoneda(nombre_cripto)
+        return calificacion, score
+
+    except Exception as e:
+        print(f"Error al calcular calificación: {e}")
+        # Considera capturar y manejar diferentes tipos de excepciones de manera específica
+        return f"Error durante el cálculo de calificación: {str(e)}", 0
+
+
+@app.route('/api/estimar_precio_potencial', methods=['POST'])
+def estimar_precio_potencial():
+    data = request.json
+    cripto_base = data['cripto_base'].upper()
+    cripto_objetivo = data['cripto_objetivo'].upper()
+
+    # Obtener market caps de las criptomonedas
+    datos_base = obtener_market_cap(cripto_base)
+    datos_objetivo = obtener_market_cap(cripto_objetivo)
+
+    if datos_base and datos_objetivo:
         try:
-            calificacion, score = calcular_calificacion(datos_cripto, nombre_cripto)
-            st.markdown(f"<h1 style='text-align: center;'>{calificacion}</h1>", unsafe_allow_html=True)
-            guardar_resultado_en_archivo(nombre_cripto, score)
-            
-            # Extraer los datos relevantes de la respuesta de la API después de calcular la calificación
-            quote = datos_cripto['data'][nombre_cripto]['quote']['USD']
-            precio = quote['price']
-            cambio_24h = quote['percent_change_24h']
-            market_cap = quote['market_cap']
-            volumen_24h = quote['volume_24h']
-            circulating_supply = datos_cripto['data'][nombre_cripto].get('circulating_supply', 0)
-            fully_diluted_market_cap = quote.get('fully_diluted_market_cap', 'N/A')
-
-            # Mostrar los datos adicionales de la criptomoneda
-            st.write(f"**Precio actual (USD):** ${precio:,.2f}")
-            st.write(f"**Cambio en 24h (%):** {cambio_24h}%")
-            st.write(f"**Market Cap (USD):** ${market_cap:,.2f}")
-            st.write(f"**Volumen 24h (USD):** ${volumen_24h:,.2f}")
-            st.write(f"**Circulating Supply:** {circulating_supply}")
-            st.write(f"**Fully Diluted Market Cap (USD):** ${fully_diluted_market_cap:,.2f}")
-
-        except KeyError as e:
-            st.error(f'Error al obtener datos de la criptomoneda: la clave {e} no se encontró.')
+            market_cap_objetivo = datos_objetivo.get('market_cap')
+            circulating_supply_base = datos_base.get('circulating_supply')
+            if market_cap_objetivo and circulating_supply_base:
+                precio_potencial = market_cap_objetivo / circulating_supply_base
+                return jsonify({'precio_potencial': precio_potencial})
+            else:
+                return jsonify({'error': 'Datos faltantes para una de las criptomonedas'}), 400
         except Exception as e:
-            st.error(f'Error al procesar los datos de la criptomoneda: {e}')
+            return jsonify({'error': f'Error al calcular el precio potencial: {e}'}), 500
+    return jsonify({'error': 'Error al obtener datos de las criptomonedas'}), 500
 
+def obtener_market_cap(cripto):
+    url = f"https://pro-api.coinmarketcap.com/v1/cryptocurrency/quotes/latest?symbol={cripto}"
+    headers = {'Accepts': 'application/json', 'X-CMC_PRO_API_KEY': API_KEY}
+    respuesta = requests.get(url, headers=headers)
+    if respuesta.status_code == 200:
+        datos = respuesta.json()
+        market_cap = datos['data'][cripto]['quote']['USD']['market_cap']
+        circulating_supply = datos['data'][cripto]['circulating_supply']
+        return {'market_cap': market_cap, 'circulating_supply': circulating_supply}
+    return None
 
-# Función para calcular el precio potencial
-def calcular_precio_potencial(market_cap_objetivo, circulating_supply_base):
-    if circulating_supply_base == 0:
-        return 0
-    return market_cap_objetivo / circulating_supply_base
-
-
-nombre_cripto = st.text_input('Introduce el símbolo de la criptomoneda (ejemplo: BTC, ETH):', key='nombre_cripto')
-if st.button('Obtener Calificación') or nombre_cripto:
-    accion()
-  
-st.header('Estimación del Market Cap de Una Criptomoneda Respecto a Otra')
-cripto_base = st.text_input('Introduce el símbolo de la criptomoneda base (ejemplo: BTC):', key='cripto_base').upper()
-cripto_objetivo = st.text_input('Introduce el símbolo de la criptomoneda objetivo (para el Market Cap):', key='cripto_objetivo').upper()
-
-if st.button('Estimar', key='btn_comparar'):
-    if cripto_base and cripto_objetivo:
-        datos_base = obtener_datos_criptomoneda(cripto_base)
-        datos_objetivo = obtener_datos_criptomoneda(cripto_objetivo)
-        try:
-            market_cap_objetivo = datos_objetivo['data'][cripto_objetivo]['quote']['USD']['market_cap']
-            circulating_supply_base = datos_base['data'][cripto_base]['circulating_supply']
-            precio_potencial = calcular_precio_potencial(market_cap_objetivo, circulating_supply_base)
-            st.write(f"El precio potencial de {cripto_base} si tuviera el market cap de {cripto_objetivo} sería: ${precio_potencial:,.2f} USD")
-        except KeyError as e:
-            st.error(f'Error al obtener datos: la clave {e} no se encontró.')
-        except Exception as e:
-            st.error(f'Error al procesar los datos: {e}')
-
+if __name__ == '__main__':
+    app.run(debug=True)
